@@ -7,11 +7,11 @@ This is a "Calendar Service using Google Calendar" written by Ruby on Grape.
 - Category API
 - Logging
 - Database Migration
+- End-User Documentation
 
 ## Todo
 - Debug
 - Sample Configuration
-- End-User Documentation
 - Developer Documentation
 - Code Refactoring
 
