@@ -1,6 +1,7 @@
 module Calendar
    class V1 < Grape::API
-      version 'v1', using: :path
+      format :json
+
       helpers NCU::OAuth::Helpers
       helpers NCU::Event::Helpers
       helpers NCU::Category::Helpers
@@ -18,24 +19,40 @@ module Calendar
       end
 
       before do
-         case env['REQUEST_METHOD']
-         when 'GET'
-            scope = NCU::OAuth::CALENDAR_READ
-         else
-            scope = NCU::OAuth::CALENDAR_WRITE
+         unless env['REQUEST_PATH'].start_with? '/calendar/v1/doc'
+            case env['REQUEST_METHOD']
+            when 'GET'
+               scope = NCU::OAuth::CALENDAR_READ
+            else
+               scope = NCU::OAuth::CALENDAR_WRITE
+            end
+            @this_token = find_token scope
          end
-         @this_token = find_token scope
       end
 
+      desc 'Return categories.' do
+         success Calendar::Entities::Categories
+         headers Authorization: {
+                     description: 'Bearer token.',
+                     required: true,
+                 }
+      end
       get :categories do
-         categories
+         {:categories => categories}
       end
 
+      desc 'Return events.' do
+         success Calendar::Entities::Events
+         headers Authorization: {
+                     description: 'Bearer token.',
+                     required: true,
+                 }
+      end
       params do
-         requires :from, type: DateTime
-         requires :to, type: DateTime
-         optional :limit, type: Integer, default: 5
-         optional :next, type: Integer, default: nil
+         requires :from, type: DateTime, desc: 'Lower bound (inclusive) to filter by.'
+         requires :to, type: DateTime, desc: 'Upper bound (exclusive) to filter by.'
+         optional :limit, type: Integer, default: 5, desc: 'Maximum number of events returned.'
+         optional :next, type: Integer, default: nil, desc: 'Event identifier of the next event.'
       end
       get :events do
          events = select_events params
@@ -47,14 +64,21 @@ module Calendar
 
       resource :event do
 
+         desc 'Creates an event.' do
+            success Calendar::Entities::Event
+            headers Authorization: {
+                        description: 'Bearer token.',
+                        required: true,
+                    }
+         end
          params do
-            requires :summary, type: String
-            requires :description, type: String
-            optional :link, type: String, default: nil
-            requires :location, type: String
-            requires :category, type: String
-            requires :start, type: DateTime
-            requires :end, type: DateTime
+            requires :summary, type: String, desc: 'Title of the event.'
+            requires :description, type: String, desc: 'Description of the event.'
+            optional :link, type: String, default: nil, desc: 'URL of the event.'
+            requires :location, type: String, desc: 'Geographic location of the event'
+            requires :category, type: String, desc: 'Category of the event.'
+            requires :start, type: DateTime, desc: 'The start time of the event.'
+            requires :end, type: DateTime, desc: 'The end time of the event.'
          end
          post do
             category = category_by_name params[:category]
@@ -66,14 +90,21 @@ module Calendar
             insert_event params
          end
 
+         desc 'Updates an event.' do
+            success Calendar::Entities::Event
+            headers Authorization: {
+                        description: 'Bearer token.',
+                        required: true,
+                    }
+         end
          params do
-            requires :id, type: String
-            optional :summary, type: String
-            optional :description, type: String
-            optional :link, type: String
-            optional :location, type: String
-            optional :start, type: DateTime
-            optional :end, type: DateTime
+            requires :id, type: String, desc: 'Event identifier.'
+            optional :summary, type: String, desc: 'Title of the event.'
+            optional :description, type: String, desc: 'Description of the event.'
+            optional :link, type: String, desc: 'URL link of the event.'
+            optional :location, type: String, desc: 'Geographic location of the event.'
+            optional :start, type: DateTime, desc: 'The start time of the event.'
+            optional :end, type: DateTime, desc: 'The end time of the event.'
          end
          put do
             event = select_event params[:id]
@@ -81,13 +112,22 @@ module Calendar
             category = category_by_name event['category']
             get_result = gcap.get params[:id], category['calendar_id']
             error! get_result.error_message, get_result.status if get_result.error?
+            params[:description] = event['description'] if params[:description].nil? && !params[:link].nil?
+            params[:link] = event['link'] if params[:link].nil? && !params[:description].nil?
             update_result = gcap.update update_google(get_result.data.to_hash, params), category['calendar_id']
             error! update_result.error_message, update_result.status if update_result.error?
             update_event params
          end
 
+         desc 'Deletes an event.' do
+            success Calendar::Entities::Event
+            headers Authorization: {
+                        description: 'Bearer token.',
+                        required: true,
+                    }
+         end
          params do
-            requires :id, type: String
+            requires :id, type: String, desc: 'Event identifier.'
          end
          delete do
             event = select_event params[:id]
@@ -98,8 +138,15 @@ module Calendar
             delete_event params[:id]
          end
 
+         desc 'Returns an event.' do
+            success Calendar::Entities::Event
+            headers Authorization: {
+                        description: 'Bearer token.',
+                        required: true,
+                    }
+         end
          params do
-            requires :id, type: String
+            requires :id, type: String, desc: 'Event identifier.'
          end
          get do
             event = select_event params[:id]
@@ -107,5 +154,13 @@ module Calendar
             event
          end
       end
+
+      add_swagger_documentation api_version: 'v1',
+                                hide_documentation_path: true,
+                                hide_format: true,
+                                mount_path: '/doc',
+                                base_path: "#{Settings::API_URL}/calendar/v1",
+                                authorizations: 'test'
+
    end
 end

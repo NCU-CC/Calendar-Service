@@ -2,9 +2,10 @@ module NCU
    module Event
       module Helpers
          def to_google event
+            link = event[:link].nil? ? '' : event[:link] + "\n"
             g_event = {
                'summary' => event[:summary],
-               'description' => @this_token['unit'] + '-' + @this_token['name'] + "\n" + event[:description],
+               'description' => @this_token['unit'] + '-' + @this_token['name'] + "\n" + link + event[:description],
                'location' => event[:location],
                'start' => { 'dateTime' => event[:start].to_s },
                'end' => { 'dateTime' => event[:end].to_s }
@@ -14,6 +15,7 @@ module NCU
          end
 
          def update_google g_event, event
+            link = event[:link].nil? ? '' : event[:link] + "\n"
             event.each do |key, value|
                case key
                when 'summary', 'location'
@@ -23,8 +25,7 @@ module NCU
                when 'link'
                   g_event['source'] = { 'url' => value }
                when 'description'
-                  g_event[key] = @this_token['unit'] + '-' + @this_token['name'] + "\n"
-                  g_event[key] << value
+                  g_event[key] = @this_token['unit'] + '-' + @this_token['name'] + "\n" + link + value
                end
             end
             g_event
@@ -48,7 +49,7 @@ module NCU
                db_event.description = event[:description] unless event[:description].nil?
                db_event.location = event[:location] unless event[:location].nil?
                db_event.start = event[:start] unless event[:start].nil?
-               db_event.end = event[:end] unless event[:link].nil?
+               db_event.end = event[:end] unless event[:end].nil?
                db_event.link = event[:link] unless event[:link].nil?
                db_event.save
             end
@@ -91,7 +92,7 @@ module NCU
                next_event = DB::Event.find_by id: cond[:next]
                next_datetime = next_event.start unless next_event.nil?
             end
-            db_events = DB::Event.order('start').where('start >= ?', next_datetime).where(creator: @this_token['user']).where(start: params[:from]..params[:to]).limit(cond[:limit] + 1)
+            db_events = DB::Event.order('start').where('start >= ?', next_datetime).where(creator: @this_token['user']).where(start: params[:from]...params[:to]).limit(cond[:limit] + 1)
             db_events.each_index do |i|
                db_events[i] = db_to_hash db_events[i]
             end
