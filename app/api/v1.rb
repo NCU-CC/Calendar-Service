@@ -51,15 +51,19 @@ module Calendar
       params do
          requires :from, type: DateTime, desc: 'Lower bound (inclusive) to filter by.'
          requires :to, type: DateTime, desc: 'Upper bound (exclusive) to filter by.'
-         optional :limit, type: Integer, default: 5, desc: 'Maximum number of events returned.'
-         optional :next, type: Integer, default: nil, desc: 'Event identifier of the next event.'
+         optional :limit, type: Integer, default: 5, desc: 'Maximum number of events returned on one result page.'
+         optional :page, type: Integer, default: 1, desc: 'Which result page to return.'
+         optional :category, type: String, default: nil, desc: 'Category of events to filter by.'
+         optional :orderBy, type: String, default: 'start', values: ['start', 'end', 'created', 'updated'], desc: 'The order of the events returned in the result and filter by.'
       end
       get :events do
+         unless params[:category].nil?
+            category = category_by_name params[:category]
+            error! 'invalid_category', 400 if category.nil?
+         end
          events = select_events params
          error! 'Not Found', 404 if events.empty?
-         next_id = nil
-         next_id = event.pop.id if events.length > params[:limit]
-         {:events => events, :count => events.length, :next => next_id}
+         {:events => events, :count => events.length, :page => params[:page]}
       end
 
       resource :event do
@@ -74,7 +78,7 @@ module Calendar
          params do
             requires :summary, type: String, desc: 'Title of the event.'
             requires :description, type: String, desc: 'Description of the event.'
-            optional :link, type: String, default: nil, desc: 'URL of the event.'
+            optional :link, type: String, default: nil, desc: 'URL link of the event.'
             requires :location, type: String, desc: 'Geographic location of the event'
             requires :category, type: String, desc: 'Category of the event.'
             requires :start, type: DateTime, desc: 'The start time of the event.'

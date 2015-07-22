@@ -87,12 +87,11 @@ module NCU
          end
 
          def select_events cond
-            next_datetime = DateTime.strptime '0', '%s'
-            unless cond[:next].nil?
-               next_event = DB::Event.find_by id: cond[:next]
-               next_datetime = next_event.start unless next_event.nil?
+            if cond[:category].nil?
+               db_events = DB::Event.where(creator: @this_token['user']).order(params[:orderBy]).where(params[:orderBy] => params[:from]...params[:to]).page(cond[:page]).per(cond[:limit]) 
+            else
+               db_events = DB::Event.where(creator: @this_token['user']).where(category: cond[:category]).order(params[:orderBy]).where(params[:orderBy] => params[:from]...params[:to]).page(cond[:page]).per(cond[:limit]) 
             end
-            db_events = DB::Event.order('start').where('start >= ?', next_datetime).where(creator: @this_token['user']).where(start: params[:from]...params[:to]).limit(cond[:limit] + 1)
             db_events.each_index do |i|
                db_events[i] = db_to_hash db_events[i]
             end

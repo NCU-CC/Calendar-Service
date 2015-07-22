@@ -16,12 +16,13 @@ module Calendar
       class Events < Grape::Entity
          expose :events, using: Event, documentation: {is_array: true, required: true}
          expose :count, documentation: {type: 'integer', desc: 'Number of events', required: true}
-         expose :next, documentation: {type: 'integer', desc: 'Event identifier of the next event.'}
+         expose :page, documentation: {type: 'integer', desc: 'Page number of events.', required: true}
       end
 
       class Category < Grape::Entity
          expose :id, documentation: {type: 'integer', desc: 'Category identifier.', required: true}
          expose :name, documentation: {type: 'string', desc: 'Name of ategory.', required: true}
+         expose :calendar_id, documentation: {type: 'string', desc: 'Calendar identifier of Google Calendar.', required: true}
       end
 
       class Categories < Grape::Entity

@@ -10,7 +10,6 @@ module NCU
             cats = DB::Category.all
             cats.each_index do |i|
                cats[i] = cats[i].serializable_hash
-               cats[i].delete 'calendar_id'
             end
             cats
          end
