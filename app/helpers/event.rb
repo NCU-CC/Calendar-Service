@@ -44,12 +44,11 @@ module NCU
          def update_event event
             db_event = DB::Event.find_by(event_id: event[:id])
             unless db_event.nil?
-               db_event.updated = DateTime.now
                db_event.summary = event[:summary] unless event[:summary].nil?
                db_event.description = event[:description] unless event[:description].nil?
                db_event.location = event[:location] unless event[:location].nil?
-               db_event.start = event[:start] unless event[:start].nil?
-               db_event.end = event[:end] unless event[:end].nil?
+               db_event.start = event[:start].to_s unless event[:start].nil?
+               db_event.end = event[:end].to_s unless event[:end].nil?
                db_event.link = event[:link] unless event[:link].nil?
                db_event.save
             end
@@ -59,15 +58,13 @@ module NCU
          def insert_event event
             db_event = DB::Event.new
             db_event.event_id = event[:id]
-            db_event.created = DateTime.now 
-            db_event.updated = DateTime.now 
             db_event.summary = event[:summary]
             db_event.description = event[:description]
             db_event.location = event[:location]
             db_event.creator = event[:creator]
             db_event.category = event[:category]
-            db_event.start = event[:start]
-            db_event.end = event[:end]
+            db_event.start = event[:start].to_s
+            db_event.end = event[:end].to_s
             db_event.link = event[:link] unless event[:link].nil?
             db_event.save
             db_to_hash db_event

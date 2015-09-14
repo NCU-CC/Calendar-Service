@@ -11,7 +11,7 @@ class Gcap
    end
 
    def authorize
-      key = Google::APIClient::KeyUtils.load_from_pkcs12('config/client.p12', 'notasecret')
+      key = Google::APIClient::KeyUtils.load_from_pkcs12(Settings::GOOGLE_P12_PATH, 'notasecret')
       Signet::OAuth2::Client.new(
         :token_credential_uri => 'https://accounts.google.com/o/oauth2/token',
         :audience => 'https://accounts.google.com/o/oauth2/token',
@@ -48,22 +48,5 @@ class Gcap
          :parameters => {'calendarId' => calendar_id, 'eventId' => eventId})
    end
 
-   # fetch the next 10 events for testing
-   def test calendar_id
-      results = @client.execute!(
-        :api_method => @calendar_api.events.list,
-        :parameters => {
-          :calendarId => calendar_id,
-          :maxResults => 10,
-          :singleEvents => true,
-          :orderBy => 'startTime',
-          :timeMin => Time.now.iso8601 })
-
-      puts "Upcoming events:"
-      puts "No upcoming events found" if results.data.items.empty?
-      results.data.items.each do |event|
-         puts event.to_json
-      end
-   end
 end
 

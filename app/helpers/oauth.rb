@@ -7,7 +7,7 @@ module NCU
          def token scope
             this_token_string = token_string
             return token_err 400, 'access_token is missing' if this_token_string.nil?
-            RestClient::Resource.new(Settings::OAUTH_TOKEN_URL + this_token_string, :verify_ssl => false).get do |response, request, result, &block|
+            RestClient.get Settings::OAUTH_TOKEN_URL + this_token_string + '?ip=' + env['REMOTE_ADDR'], {x_ncu_api_token: Settings::NCU_API_TOKEN} do |response, request, result, &block|
                if response.code == 200
                   res = JSON.parse response.body
                   if res['scope'].include? scope
@@ -20,7 +20,7 @@ module NCU
          end
 
          def token_info this_token_string
-            response = RestClient::Resource.new(Settings::PERSONNEL_INFO_URL, :verify_ssl => false).get({'Authorization' => "Bearer #{this_token_string}"})
+            response = RestClient.get Settings::PERSONNEL_INFO_URL, {authorization: "Bearer #{this_token_string}"}
             res = JSON.parse response.body
          end
 

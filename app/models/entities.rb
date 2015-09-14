@@ -2,8 +2,8 @@ module Calendar
    module Entities
       class Event < Grape::Entity
          expose :id, documentation: {type: 'string', desc: 'Event identifier.', required: true}
-         expose :created, documentation: {type: 'string', format: 'date-time', desc: 'Creation time of the event.', required: true}
-         expose :updated, documentation: {type: 'string', format: 'date-time', desc: 'Last modification time of the event.', required: true}
+         expose :created_at, documentation: {type: 'string', format: 'date-time', desc: 'Creation time of the event.', required: true}
+         expose :updated_at, documentation: {type: 'string', format: 'date-time', desc: 'Last modification time of the event.', required: true}
          expose :summary, documentation: {type: 'string', desc: 'Title of the event.', required: true}
          expose :description, documentation: {type: 'string', desc: 'Description of the event.', required: true}
          expose :location, documentation: {type: 'string', desc: 'Geographic location of the event.', required: true}
@@ -23,6 +23,7 @@ module Calendar
          expose :id, documentation: {type: 'integer', desc: 'Category identifier.', required: true}
          expose :name, documentation: {type: 'string', desc: 'Name of ategory.', required: true}
          expose :calendar_id, documentation: {type: 'string', desc: 'Calendar identifier of Google Calendar.', required: true}
+         expose :addible, documentation: {type: 'boolean', desc: 'Whether this category is addible.', required: true}
       end
 
       class Categories < Grape::Entity

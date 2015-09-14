@@ -6,10 +6,15 @@ module Calendar
       helpers NCU::Event::Helpers
       helpers NCU::Category::Helpers
       helpers do
-         @@gcap = nil
+         def request
+            @request ||= ::Rack::Request.new(env)
+         end
          def gcap
-            return @@gcap unless @@gcap.nil?
-            @@gcap = Gcap.new
+            @@gcap ||= Gcap.new
+         end
+         def error! message, error_code
+            V1.logger.error "{:path=>#{request.path}, :params=>#{request.params.to_hash}, :method=>#{request.request_method}, :message=>#{message}, :status=>#{error_code}}"
+            super message, error_code
          end
          def find_token scope
             this_token = token scope
@@ -18,9 +23,14 @@ module Calendar
          end
       end
 
+      rescue_from :all do |e|
+         V1.logger.error e
+         error! 'server_error', 500
+      end
+
       before do
-         unless env['REQUEST_PATH'].start_with? '/calendar/v1/doc'
-            case env['REQUEST_METHOD']
+         unless request.path.start_with? '/calendar/v1/doc'
+            case request.request_method
             when 'GET'
                scope = NCU::OAuth::CALENDAR_READ
             else
@@ -28,6 +38,7 @@ module Calendar
             end
             @this_token = find_token scope
          end
+         header 'Content-Type', 'application/json;charset=UTF-8'
       end
 
       desc 'Return categories.' do
@@ -54,7 +65,7 @@ module Calendar
          optional :limit, type: Integer, default: 5, desc: 'Maximum number of events returned on one result page.'
          optional :page, type: Integer, default: 1, desc: 'Which result page to return.'
          optional :category, type: String, default: nil, desc: 'Category of events to filter by.'
-         optional :orderBy, type: String, default: 'start', values: ['start', 'end', 'created', 'updated'], desc: 'The order of the events returned in the result and filter by.'
+         optional :orderBy, type: String, default: 'start', values: ['start', 'end', 'created_at', 'updated_at'], desc: 'The order of the events returned in the result and filter by.'
       end
       get :events do
          unless params[:category].nil?
@@ -86,7 +97,7 @@ module Calendar
          end
          post do
             category = category_by_name params[:category]
-            error! 'invalid_category', 400 if category.nil?
+            error! 'invalid_category', 400 if category.nil? || !category['addible']
             result = gcap.insert to_google(params), category['calendar_id']   
             error! result.error_message, result.status if result.error?
             params[:id] = result.data.id
@@ -117,7 +128,7 @@ module Calendar
             get_result = gcap.get params[:id], category['calendar_id']
             error! get_result.error_message, get_result.status if get_result.error?
             params[:description] = event['description'] if params[:description].nil? && !params[:link].nil?
-            params[:link] = event['link'] if params[:link].nil? && !params[:description].nil?
+            params[:link] = event['link'] if params[:link].nil? && !params[:description].nil? && !event['link'].nil?
             update_result = gcap.update update_google(get_result.data.to_hash, params), category['calendar_id']
             error! update_result.error_message, update_result.status if update_result.error?
             update_event params

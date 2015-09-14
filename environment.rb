@@ -13,3 +13,5 @@ require 'google/api_client'
 require 'google/api_client/client_secrets'
 require 'google/api_client/auth/installed_app'
 require './config/settings.rb'
+
+ActiveRecord::Base.default_timezone = :local
