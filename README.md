@@ -8,6 +8,7 @@ This is a "Calendar Service using Google Calendar" written by Ruby on Grape.
 - Logging
 - Database Migration
 - End-User Documentation
+- CSV-file Importing
 
 ## Todo
 - Debug
